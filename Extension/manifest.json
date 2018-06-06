@@ -1,16 +1,25 @@
 {
-  "name":           "JMX Creator",
-  "version":        "0.1",
-  "description":    "Create .jmx file ",
+  "name": "JMX Creator",
+  "version": "0.1",
+  "description": "Create .jmx file ",
   "background": {
-    "persistent": true,
-    "scripts": ["background.js"]
+    "page": "background.html",
+    "default_popup": "",
+    "persistent": true
+    //    "scripts": ["background.js","taffy.js"]
   },
   "browser_action": {
-    "default_popup": "popup.html"
+    "default_popup": "main.html"
   },
-  "permissions":    [
-    "webNavigation", "storage","webRequest","https://*/*","http://*/*"
+  "permissions": [
+    "activeTab",
+    "webNavigation",
+    "storage",
+    "webRequest",
+    "https://*/*",
+    "http://*/*",
+    "notifications",
+    "browsingData"
   ],
   "manifest_version": 3
 }
