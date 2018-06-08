@@ -4,12 +4,12 @@
             {HTTPArguments}
             </collectionProp>
           </elementProp>
-          <stringProp name="HTTPSampler.domain">{ServerName}</stringProp>
+          <stringProp name="HTTPSampler.domain">{domain}</stringProp>
           <stringProp name="HTTPSampler.port">{ServerPort}</stringProp>
           <stringProp name="HTTPSampler.protocol">{SamplerProtocol}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
-          <stringProp name="HTTPSampler.path">PolicyCenter.do</stringProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">{SamplerPath}</stringProp>
+          <stringProp name="HTTPSampler.method">{SamplerMethod}</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -20,14 +20,11 @@
           <stringProp name="TestPlan.comments">{SamplerComment}</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header manager" enabled="true">
-            <collectionProp name="HeaderManager.headers">
-            {Headers}
-            </collectionProp>
-          </HeaderManager>
-          <hashTree/>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
-            <stringProp name="ConstantTimer.delay">0</stringProp>
-          </ConstantTimer>
-          <hashTree/>
+           <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header manager" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+              {HeaderElement}
+              </collectionProp>
+           </HeaderManager>
+           <hashTree/>
+          {ConstantTimer}
         </hashTree>

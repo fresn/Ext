@@ -37,6 +37,6 @@ XmlTools = {
     }
 };
 
-XmlTools.readXml("../JmxTemplate/TestElement.xml.tp",function (st) {
+XmlTools.readXml("../JmxTemplate/TestElements.xml.tp",function (st) {
     console.log(reg1.exec(st));
 });

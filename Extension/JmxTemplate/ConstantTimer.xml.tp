@@ -1,0 +1,4 @@
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="{ConstantTimerName}" enabled="true">
+            <stringProp name="ConstantTimer.delay">{ConstantTimerValue}</stringProp>
+          </ConstantTimer>
+          <hashTree/>
