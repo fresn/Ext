@@ -246,3 +246,6 @@ myReqs.newRequest("https://www.stackoverflow.com/questions/2140627/javascript-ca
 myReqs.newRequest("http://www.google.com", "get", new ReqHeaders([]), new ConstantWait(0));
 console.log(myReqs);
 TemplateEngine.init();
+chrome.runtime.sendMessage({ command: "getReqS" }, function (resp) {
+    console.log(resp);
+});

@@ -270,3 +270,7 @@ myReqs.newRequest(
 myReqs.newRequest("http://www.google.com", "get", new ReqHeaders([]), new ConstantWait(0));
 console.log(myReqs);
 TemplateEngine.init();
+
+chrome.runtime.sendMessage({command:"getReqS"},function (resp) {
+    console.log(resp)
+});

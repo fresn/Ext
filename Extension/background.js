@@ -7,7 +7,11 @@ chrome.webRequest.onBeforeRedirect.addListener(BeforeRedirectHandler, {urls: []}
 chrome.webRequest.onResponseStarted.addListener(ResponseStartedHandler, {urls: []}, ['responseHeaders']);
 chrome.webRequest.onCompleted.addListener(CompletedHandler, {urls: []}, ['responseHeaders']);
 chrome.webRequest.onErrorOccurred.addListener(ErrorOccurredHandler, {urls: []});
-
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    if(message.command==="getReqS"){
+        sendResponse(ReqAnalysis.getTopLevel());
+    }
+});
 let IfDebug = false;
 
 TAFFY.extend("avg", function (c) {
