@@ -8,6 +8,8 @@ chrome.webRequest.onResponseStarted.addListener(ResponseStartedHandler, {urls: [
 chrome.webRequest.onCompleted.addListener(CompletedHandler, {urls: []}, ['responseHeaders']);
 chrome.webRequest.onErrorOccurred.addListener(ErrorOccurredHandler, {urls: []});
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    log(message);
+    log(sender);
     if (message.command === "getReqS") {
         sendResponse(ReqAnalysis.getTopLevel());
     } else if (message.command === "startSampling") {
@@ -18,8 +20,35 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         sendResponse({IfRunningStatus: IfRunningStatus})
     }
 });
+chrome.runtime.onMessageExternal.addListener(function (message, sender, sendResponse) {
+    log(message);
+    log(sender);
+});
 chrome.browserAction.onClicked.addListener(function (tab) {
-    console.log(tab)
+    chrome.tabs.query({currentWindow: true, active: true}, function (cT) {
+        console.log(cT)
+    });
+    let code="\"{name}\"".format({name:"Ian"});
+    log(code);
+    chrome.tabs.executeScript({
+            code:
+               "(function () {\n" +
+               "    let newElement=document.createElement(\"div\");\n" +
+               "    newElement.setAttribute(\"hidden\",\"true\");\n" +
+               "    newElement.innerText=\'"+JSON.stringify(ReqAnalysis.getTopLevel())+"\'\n" +
+               "    return document.getElementsByTagName(\"body\")[0].appendChild(newElement)\n" +
+               "})();\n"
+        },
+        function (result) {
+            console.log(result)
+        }
+    );
+    ReqAnalysis.start();
+});
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    log(tabId);
+    log(changeInfo);
+    log(tab);
 });
 let IfDebug = false;
 let IfRunningStatus = false;
@@ -43,22 +72,20 @@ TAFFY.extend("avg", function (c) {
 
 
 let reqObjects = [];
-chrome.tabs.onActivated.addListener(function (activeInfo) {
-    chrome.tabs.getCurrent(function (currentTab) {
-        console.log("current");
-        console.log(currentTab);
-    })
-});
+
+function log(string) {
+    console.log(string)
+}
 
 let ReqAnalysis = {
     getErrReqS: function () {
-        let db = TAFFY(reqObjects);
+        let db = TAFFY(ReqAnalysis.reqObjects);
         return db(function () {
             return this.TimeErrorOccurred
         }).get()
     },
     getTopLevel: function () {
-        let db = TAFFY(reqObjects);
+        let db = TAFFY(ReqAnalysis.reqObjects);
         return db(function () {
             return (
                 (this.type === 'main_frame' ||
@@ -71,7 +98,7 @@ let ReqAnalysis = {
         }).get();
     },
     getUrls: function () {
-        let db = TAFFY(reqObjects);
+        let db = TAFFY(ReqAnalysis.reqObjects);
         return db(function () {
             return (
                 (this.type === 'main_frame' ||
@@ -84,26 +111,26 @@ let ReqAnalysis = {
         }).get();
     },
     start: function () {
-        reqObjects = [];
+        ReqAnalysis.reqObjects = [];
         IfRunningStatus = true;
         chrome.tabs.query({currentWindow: true, active: true}, function (currentTab) {
-            console.log(currentTab);
+            IfTabId = currentTab[0].id
         })
 
     },
     stop: function () {
         IfRunningStatus = false;
+        IfTabId = "";
     },
-    reqObjects:[]
+    reqObjects: []
 };
 
 function BeforeRequestHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-
     if (IfRunningStatus && (detail.tabId === IfTabId)) {
-        reqObjects.push({
+        ReqAnalysis.reqObjects.push({
             requestId: detail.requestId,
             TimeBeforeRequest: Date.now(),
             method: detail.method,
@@ -124,16 +151,13 @@ function BeforeRequestHandler(detail) {
     }
 
 
-    // db=TAFFY(reqObjects);
-    // console.log(db({requestId:detail.requestId}).first())
-
 }
 
 function BeforeSendHeadersHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeBeforeSendHeaders = Date.now();
@@ -144,20 +168,19 @@ function SendHeadersHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeSendHeaders = Date.now();
         local.requestHeaders = detail.requestHeaders
     }
-
 }
 
 function HeadersReceivedHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeHeadersReceived = Date.now();
@@ -168,7 +191,7 @@ function AuthRequiredHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeAuthRequired = Date.now();
@@ -179,7 +202,7 @@ function BeforeRedirectHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeBeforeRedirect = Date.now();
@@ -190,7 +213,7 @@ function ResponseStartedHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeResponseStarted = Date.now();
@@ -201,7 +224,7 @@ function CompletedHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeCompleted = Date.now();
@@ -214,7 +237,7 @@ function ErrorOccurredHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    let db = TAFFY(reqObjects);
+    let db = TAFFY(ReqAnalysis.reqObjects);
     let local = db({requestId: detail.requestId}).first();
     if (IfRunningStatus && local) {
         local.TimeErrorOccurred = Date.now();

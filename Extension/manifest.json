@@ -16,10 +16,13 @@
     "webNavigation",
     "storage",
     "webRequest",
-    "https://*/*",
-    "http://*/*",
+    "https://*/",
+    "http://*/",
+    "http://www.google.com/*",
+    "https://www.google.com/*",
+//    "https://www.google.ca/*",
     "notifications",
     "browsingData"
   ],
-  "manifest_version": 3
+  "manifest_version": 2
 }
