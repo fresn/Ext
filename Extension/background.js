@@ -8,52 +8,69 @@ chrome.webRequest.onResponseStarted.addListener(ResponseStartedHandler, {urls: [
 chrome.webRequest.onCompleted.addListener(CompletedHandler, {urls: []}, ['responseHeaders']);
 chrome.webRequest.onErrorOccurred.addListener(ErrorOccurredHandler, {urls: []});
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    log(message);
-    log(sender);
+    console.log(message);
+    console.log(sender);
     if (message.command === "getReqS") {
         sendResponse(ReqAnalysis.getTopLevel());
     } else if (message.command === "startSampling") {
         ReqAnalysis.start();
-        sendResponse({IfRunningStatus: IfRunningStatus})
+        onStartSimpling.fire();
     } else if (message.command === "stopSampling") {
         ReqAnalysis.stop();
+        onStartSimpling.fire();
+    } else if (message.command === "SamplingStatus") {
         sendResponse({IfRunningStatus: IfRunningStatus})
     }
 });
 chrome.runtime.onMessageExternal.addListener(function (message, sender, sendResponse) {
-    log(message);
-    log(sender);
+    if (message.command === "getReqS") {
+        sendResponse({ReqS: ReqAnalysis.getTopLevel()})
+    } else if (message.command = "getJmx") {
+
+    }
 });
-chrome.browserAction.onClicked.addListener(function (tab) {
-    chrome.tabs.query({currentWindow: true, active: true}, function (cT) {
-        console.log(cT)
-    });
-    let code="\"{name}\"".format({name:"Ian"});
-    log(code);
-    chrome.tabs.executeScript({
-            code:
-               "(function () {\n" +
-               "    let newElement=document.createElement(\"div\");\n" +
-               "    newElement.setAttribute(\"hidden\",\"true\");\n" +
-               "    newElement.innerText=\'"+JSON.stringify(ReqAnalysis.getTopLevel())+"\'\n" +
-               "    return document.getElementsByTagName(\"body\")[0].appendChild(newElement)\n" +
-               "})();\n"
-        },
-        function (result) {
-            console.log(result)
-        }
-    );
-    ReqAnalysis.start();
-});
+onStartSimpling = {
+    fire: function () {
+        console.log("sending message : " + JSON.stringify({
+            command: "IfRunningUpdate",
+            IfRunningStatus: IfRunningStatus
+        }));
+        chrome.runtime.sendMessage({command: "IfRunningUpdate", IfRunningStatus: IfRunningStatus})
+    }
+};
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    log(tabId);
-    log(changeInfo);
-    log(tab);
+    console.log("↓=====================Tab onUpdated=================↓");
+    console.log(tabId);
+    console.log(changeInfo);
+    console.log(tab);
+    console.log("↑=====================Tab onUpdated=================↑");
+    if(changeInfo.status==="complete"){
+        chrome.tabs.executeScript({code: "document.getElementById('" + chrome.app.getDetails().id + "');"}, function (result) {
+            console.log("result");
+            console.log(result);
+            if (result !== null) {
+                chrome.tabs.executeScript({
+                    code:
+                   "  let newScriptElement=document.createElement(\"script\");\n" +
+                   "    newScriptElement.setAttribute(\"id\",'"+chrome.app.getDetails().id+"');\n" +
+                   "    newScriptElement.innerText=\"let resTopS;\\n\" +\n" +
+                   "        \"    function getTopReqS() {\\n\" +\n" +
+                   "        \"        chrome.runtime.sendMessage('"+chrome.app.getDetails().id+"',{\\n\" +\n" +
+                   "        \"            command:\\\"getReqS\\\"\\n\" +\n" +
+                   "        \"        },function (response) {\\n\" +\n" +
+                   "        \"            resTopS=response;\\n\" +\n" +
+                   "        \"            console.log(response)\\n\" +\n" +
+                   "        \"        })\\n\" +\n" +
+                   "        \"    }\";\n" +
+                   "    document.getElementsByTagName(\"body\")[0].appendChild(newScriptElement);"
+                })
+            }
+        });
+    }
 });
 let IfDebug = false;
 let IfRunningStatus = false;
 let IfTabId = "";
-
 TAFFY.extend("avg", function (c) {
     // This runs the query or returns the results if it has already run
     this.context({
@@ -69,14 +86,6 @@ TAFFY.extend("avg", function (c) {
     // divide the total by the number of records and return
     return total / this.context().results.length;
 });
-
-
-let reqObjects = [];
-
-function log(string) {
-    console.log(string)
-}
-
 let ReqAnalysis = {
     getErrReqS: function () {
         let db = TAFFY(ReqAnalysis.reqObjects);
@@ -115,14 +124,36 @@ let ReqAnalysis = {
         IfRunningStatus = true;
         chrome.tabs.query({currentWindow: true, active: true}, function (currentTab) {
             IfTabId = currentTab[0].id
-        })
+
+        });
+
+
+
 
     },
     stop: function () {
         IfRunningStatus = false;
         IfTabId = "";
     },
-    reqObjects: []
+    reqObjects: [],
+    TopLevelReqSDetail: {
+        ReqS: []
+    },
+    onTopLevelReqAdded: {
+        fire: function () {
+            console.log("new top level")
+        }
+    },
+    onReqEnds: {
+        fire: function () {
+            let currentTopLevel = ReqAnalysis.getTopLevel();
+            if (currentTopLevel.length !== ReqAnalysis.TopLevelReqSDetail.ReqS.length) {
+                ReqAnalysis.TopLevelReqSDetail.ReqS = currentTopLevel;
+                ReqAnalysis.onTopLevelReqAdded.fire();
+            }
+
+        }
+    }
 };
 
 function BeforeRequestHandler(detail) {
@@ -230,6 +261,7 @@ function CompletedHandler(detail) {
         local.TimeCompleted = Date.now();
         local.responseHeaders = detail.responseHeaders;
         local.statusCode = detail.statusCode;
+        ReqAnalysis.onReqEnds.fire();
     }
 }
 
