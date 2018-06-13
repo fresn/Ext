@@ -10,28 +10,23 @@
 
 <script>
     let newScriptElement=document.createElement("script");
-    newScriptElement.setAttribute("id",chrome.app.getDetails().id);
-    newScriptElement.innerText="let resTopS;\n" +
-        "    function getTopReqS() {\n" +
-        "        chrome.runtime.sendMessage('id',{\n" +
-        "            command:\"getReqS\"\n" +
-        "        },function (response) {\n" +
-        "            resTopS=response;\n" +
-        "            console.log(response)\n" +
-        "        })\n" +
-        "    }";
+    newScriptElement.setAttribute("id","{id}");
+    newScriptElement.innerText="let resTopS;async function getTopReqS(){return await sendMessage(\"getReqS\").then(a=>{return a})}function sendMessage(a){return new Promise(b=>{chrome.runtime.sendMessage(\"{id}\",{command:a},function(c){console.log(c),b(c)})})}";
     document.getElementsByTagName("body")[0].appendChild(newScriptElement);
 
 
-    document.getElementById("");
-
     let resTopS;
-    function getTopReqS() {
-        chrome.runtime.sendMessage('id',{
-            command:"getReqS"
-        },function (response) {
-            resTopS=response;
-            console.log(response)
+    async function getTopReqS() {
+       return await sendMessage("getReqS").then(value => {return value});
+    }
+    function sendMessage(command) {
+        return new Promise(resolve => {
+            chrome.runtime.sendMessage("{id}",{
+                command:command
+            },function (response) {
+                console.log(response);
+                resolve(response);
+            })
         })
     }
 </script>

@@ -6,7 +6,6 @@
     "page": "background.html",
     "default_popup": "",
     "persistent": true
-    //    "scripts": ["background.js","taffy.js"]
   },
   "browser_action": {
     "default_popup": "popup.html"

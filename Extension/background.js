@@ -45,47 +45,23 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     console.log(tab);
     console.log("↑=====================Tab onUpdated=================↑");
     if(changeInfo.status==="complete"){
-        chrome.tabs.executeScript({code: "document.getElementById('" + chrome.app.getDetails().id + "');"}, function (result) {
+        chrome.tabs.executeScript({code:
+            "document.getElementById('" + chrome.app.getDetails().id + "');"}, function (result) {
             console.log("result");
             console.log(result);
             if (result !== null) {
                 chrome.tabs.executeScript({
                     code:
-                   "  let newScriptElement=document.createElement(\"script\");\n" +
-                   "    newScriptElement.setAttribute(\"id\",'"+chrome.app.getDetails().id+"');\n" +
-                   "    newScriptElement.innerText=\"let resTopS;\\n\" +\n" +
-                   "        \"    function getTopReqS() {\\n\" +\n" +
-                   "        \"        chrome.runtime.sendMessage('"+chrome.app.getDetails().id+"',{\\n\" +\n" +
-                   "        \"            command:\\\"getReqS\\\"\\n\" +\n" +
-                   "        \"        },function (response) {\\n\" +\n" +
-                   "        \"            resTopS=response;\\n\" +\n" +
-                   "        \"            console.log(response)\\n\" +\n" +
-                   "        \"        })\\n\" +\n" +
-                   "        \"    }\";\n" +
-                   "    document.getElementsByTagName(\"body\")[0].appendChild(newScriptElement);"
+                        "let newScriptElement=document.createElement(\"script\");newScriptElement.setAttribute(\"id\",\""+chrome.app.getDetails().id+"\"),newScriptElement.innerText=\"let resTopS;async function getTopReqS(){return await sendMessage(\\\"getReqS\\\").then(a=>{return a})}function sendMessage(a){return new Promise(b=>{chrome.runtime.sendMessage(\\\""+chrome.app.getDetails().id+"\\\",{command:a},function(c){console.log(c),b(c)})})}\",document.getElementsByTagName(\"body\")[0].appendChild(newScriptElement);"
                 })
             }
         });
     }
 });
+//Running status Flags 
 let IfDebug = false;
 let IfRunningStatus = false;
-let IfTabId = "";
-TAFFY.extend("avg", function (c) {
-    // This runs the query or returns the results if it has already run
-    this.context({
-        results: this.getDBI().query(this.context())
-    });
-    // setup the sum
-    let total = 0;
-    // loop over every record in the results and sum up the column.
-    TAFFY.each(this.context().results, function (r) {
-        total = total + r[c];
-    });
 
-    // divide the total by the number of records and return
-    return total / this.context().results.length;
-});
 let ReqAnalysis = {
     getErrReqS: function () {
         let db = TAFFY(ReqAnalysis.reqObjects);
@@ -120,20 +96,13 @@ let ReqAnalysis = {
         }).get();
     },
     start: function () {
+        //init main repo of reqS
         ReqAnalysis.reqObjects = [];
+        //set running status to true
         IfRunningStatus = true;
-        chrome.tabs.query({currentWindow: true, active: true}, function (currentTab) {
-            IfTabId = currentTab[0].id
-
-        });
-
-
-
-
     },
     stop: function () {
         IfRunningStatus = false;
-        IfTabId = "";
     },
     reqObjects: [],
     TopLevelReqSDetail: {
@@ -160,7 +129,7 @@ function BeforeRequestHandler(detail) {
     if (IfDebug) {
         console.log(detail)
     }
-    if (IfRunningStatus && (detail.tabId === IfTabId)) {
+    if (IfRunningStatus ) {
         ReqAnalysis.reqObjects.push({
             requestId: detail.requestId,
             TimeBeforeRequest: Date.now(),
@@ -277,3 +246,20 @@ function ErrorOccurredHandler(detail) {
     }
 }
 
+TAFFY.extend("avg", function (c) {
+    // This runs the query or returns the results if it has already run
+    this.context({
+        results: this.getDBI().query(this.context())
+    });
+    // setup the sum
+    let total = 0;
+    // loop over every record in the results and sum up the column.
+    TAFFY.each(this.context().results, function (r) {
+        total = total + r[c];
+    });
+
+    // divide the total by the number of records and return
+    return total / this.context().results.length;
+});
+
+ReqAnalysis.start();
